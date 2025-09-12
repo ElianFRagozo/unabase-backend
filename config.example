@@ -1,0 +1,12 @@
+# Configuración de ejemplo para .env
+# Copia este archivo como .env y configura tus valores
+
+# Configuración de OpenAI
+OPENAI_API_KEY=tu_api_key_de_openai_aqui
+
+# Configuración del servidor
+PORT=8000
+HOST=0.0.0.0
+
+# Configuración de desarrollo
+DEBUG=False
