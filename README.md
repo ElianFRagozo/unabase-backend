@@ -7,7 +7,7 @@
 ![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4-orange?style=for-the-badge&logo=openai&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
 
-**🚀 API backend inteligente para procesar documentos fiscales chilenos**
+**🚀 API backend inteligente para procesar documentos fiscales**
 
 *Extrae información automáticamente de boletas, facturas y recibos usando IA*
 
@@ -275,7 +275,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 
 <div align="center">
 
-**🎉 ¡Backend listo para procesar documentos fiscales chilenos!**
+**🎉 ¡Backend listo para procesar documentos!**
 
 *Desarrollado con ❤️ para Unabase*
 
