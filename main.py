@@ -93,7 +93,9 @@ if __name__ == "__main__":
             "main:app",
             host=settings.HOST,
             port=settings.PORT,
-            reload=True,  # Solo para desarrollo
+            reload=False,  # Sin reload automático
+            reload_dirs=[],  # Sin directorios a monitorear
+            reload_excludes=["*"],  # Excluir todo del monitoreo
             log_level="info"
         )
     except Exception as e:

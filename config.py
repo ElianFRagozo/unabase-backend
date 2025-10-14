@@ -11,7 +11,7 @@ class Settings:
     
     # Validación de configuración
     def validate(self):
-        if not self.OPENAI_API_KEY or self.OPENAI_API_KEY == "tu api key":
+        if not self.OPENAI_API_KEY or self.OPENAI_API_KEY == "":
             print("⚠️  WARNING: OPENAI_API_KEY not configured. Some features may not work.")
             # No lanzar error para permitir que el servidor se ejecute
 

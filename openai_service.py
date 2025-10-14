@@ -8,24 +8,41 @@ from config import settings
 class OpenAIService:
     def __init__(self):
         openai.api_key = settings.OPENAI_API_KEY
-        if settings.OPENAI_API_KEY and settings.OPENAI_API_KEY != "tu api key":
-            self.client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+        print(f"🔧 OpenAI Service Init: API Key length: {len(settings.OPENAI_API_KEY) if settings.OPENAI_API_KEY else 0}")
+        
+        if settings.OPENAI_API_KEY and len(settings.OPENAI_API_KEY) > 20:
+            try:
+                self.client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+                print(f"✅ OpenAI Service: Cliente creado exitosamente")
+            except Exception as e:
+                print(f"❌ OpenAI Service: Error creando cliente: {e}")
+                self.client = None
         else:
+            print(f"⚠️ OpenAI Service: API Key inválida o muy corta")
             self.client = None
     
     def analyze_document_image(self, image_base64: str) -> Dict[str, Any]:
         """
         Analiza una imagen de documento fiscal usando GPT-4 Vision
         """
+        print(f"🔍 OpenAI Service: Cliente disponible: {self.client is not None}")
+        print(f"🔍 OpenAI Service: API Key configurada: {bool(settings.OPENAI_API_KEY)}")
+        
         if not self.client:
+            print("⚠️ OpenAI Service: Usando datos de ejemplo - API Key no configurada")
             # Retornar datos de ejemplo si no hay API key configurada
             return self._get_sample_data()
         
         try:
+            print(f"🔍 OpenAI Service: Procesando imagen...")
+            print(f"🔍 OpenAI Service: Longitud base64: {len(image_base64)}")
+            
             # Remover el prefijo data:image si existe
             if image_base64.startswith('data:image'):
                 image_base64 = image_base64.split(',')[1]
+                print(f"🔍 OpenAI Service: Removido prefijo data:image")
             
+            print(f"🔍 OpenAI Service: Enviando a GPT-4...")
             response = self.client.chat.completions.create(
                 model="gpt-4-turbo",
                 messages=[
@@ -46,6 +63,8 @@ OBLIGATORIO extraer:
 - rut: RUT chileno del proveedor (formato XX.XXX.XXX-X)
 - total: Monto total del documento
 - detalle: Descripción de los productos/servicios
+- impuestos: Monto de impuestos si es visible
+- porcentaje: Porcentaje de impuestos si es visible
 
 OPCIONAL extraer:
 - alias: Nombre comercial o alias del proveedor
@@ -255,30 +274,4 @@ IMPORTANTE:
         Retorna datos de ejemplo cuando no hay API key configurada
         """
         return {
-            "documentData": {
-                "referencia": "BOL-2024-001",
-                "tipoDocumento": "Boleta",
-                "numeroDocumento": "8752",
-                "fecha": "15/12/2024",
-                "moneda": "CLP"
-            },
-            "providerData": {
-                "nombre": "Ferretería El Constructor",
-                "alias": "El Constructor",
-                "email": "ventas@constructor.cl",
-                "rut": "76.123.456-7"
-            },
-            "detailsData": {
-                "lineaAsociar": "Materiales",
-                "porcentaje": "19%",
-                "impuestos": "1300",
-                "total": "10000",
-                "detalle": "Compra de materiales de construcción"
-            },
-            "confidence": 85,
-            "extractedFields": [
-                "referencia", "tipoDocumento", "numeroDocumento", 
-                "fecha", "moneda", "nombre", "rut", "total", "detalle"
-            ],
-            "missingFields": ["email", "impuestos"]
         }

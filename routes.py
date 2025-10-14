@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Request
 from typing import Dict, Any
 import logging
+import json
 from models import (
     ProcessDocumentRequest, 
     ProcessDocumentResponse,
@@ -54,6 +55,8 @@ async def process_document(request: ProcessDocumentRequest):
         }
         
         logger.info(f"Successfully processed document. Confidence: {extracted_data.get('confidence', 0)}%")
+        logger.info(f"Extracted data keys: {list(extracted_data.keys())}")
+        logger.info(f"Sample extracted data: {json.dumps({k: v for k, v in extracted_data.items() if k not in ['expenseId', 'userData']}, indent=2)}")
         
         return ProcessDocumentResponse(
             success=True,
@@ -73,59 +76,102 @@ async def process_document(request: ProcessDocumentRequest):
             detail=f"Error processing document: {str(e)}"
         )
 
-@router.post("/api/validate-extracted-data", response_model=ValidateDataResponse)
-async def validate_extracted_data(request: ValidateDataRequest):
+@router.post("/api/validate-extracted-data")
+async def validate_extracted_data(request: Request):
     """
     Valida los datos extraídos por ChatGPT
     """
     try:
-        logger.info(f"Validating extracted data with confidence: {request.confidence}%")
+        # Obtener datos del request
+        body = await request.json()
+        logger.info(f"Raw request data: {json.dumps(body, indent=2)}")
+        
+        # Extraer datos de manera flexible
+        extracted_data = body.get("extractedData", {})
+        confidence_raw = body.get("confidence", 0)
+        
+        # Convertir confidence a int si es necesario
+        try:
+            confidence = int(confidence_raw)
+        except (ValueError, TypeError):
+            logger.warning(f"Invalid confidence value: {confidence_raw}, using 0")
+            confidence = 0
+        
+        logger.info(f"Validating extracted data with confidence: {confidence}%")
+        logger.info(f"Extracted data keys: {list(extracted_data.keys()) if extracted_data else 'None'}")
         
         # Validar confidence
-        if not (0 <= request.confidence <= 100):
+        if not (0 <= confidence <= 100):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Confidence must be between 0 and 100"
             )
         
         # Validar que hay datos para validar
-        if not request.extractedData:
+        if not extracted_data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Extracted data is required"
             )
         
         # Realizar validaciones específicas
-        validation_results = _validate_document_data(request.extractedData)
+        validation_results = _validate_document_data(extracted_data)
         
         # Determinar si los datos son válidos
         is_valid = (
             validation_results["is_valid"] and 
-            request.confidence >= 70  # Umbral mínimo de confianza
+            confidence >= 70  # Umbral mínimo de confianza
         )
         
         response_data = {
             "isValid": is_valid,
-            "confidence": request.confidence,
+            "confidence": confidence,
             "validationResults": validation_results,
-            "recommendations": _generate_recommendations(validation_results, request.confidence)
+            "recommendations": _generate_recommendations(validation_results, confidence)
         }
         
         logger.info(f"Validation completed. Valid: {is_valid}")
         
-        return ValidateDataResponse(
-            success=True,
-            data=response_data
-        )
+        return {
+            "success": True,
+            "data": response_data
+        }
         
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error validating data: {str(e)}")
+        logger.error(f"Request data type: {type(request)}")
+        logger.error(f"Request data: {request}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error validating data: {str(e)}"
         )
+
+@router.post("/api/debug-validate-data")
+async def debug_validate_data(request: Request):
+    """
+    Endpoint de debug para ver qué datos está enviando el frontend
+    """
+    try:
+        body = await request.json()
+        logger.info(f"DEBUG - Raw request body: {json.dumps(body, indent=2)}")
+        
+        return {
+            "success": True,
+            "received_data": body,
+            "data_types": {
+                "extractedData_type": type(body.get("extractedData", None)).__name__,
+                "confidence_type": type(body.get("confidence", None)).__name__,
+                "confidence_value": body.get("confidence", None)
+            }
+        }
+    except Exception as e:
+        logger.error(f"Debug error: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 def _validate_document_data(data: Dict[str, Any]) -> Dict[str, Any]:
     """
