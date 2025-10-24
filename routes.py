@@ -9,6 +9,8 @@ from models import (
     ValidateDataResponse
 )
 from openai_service import OpenAIService
+from document_agent import DocumentAgent
+from openai_assistant import OpenAIAssistant
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -16,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 openai_service = OpenAIService()
+document_agent = DocumentAgent()
+openai_assistant = OpenAIAssistant()
 
 @router.post("/api/process-document", response_model=ProcessDocumentResponse)
 async def process_document(request: ProcessDocumentRequest):
@@ -44,8 +48,16 @@ async def process_document(request: ProcessDocumentRequest):
                 detail="Invalid base64 image format"
             )
         
-        # Procesar la imagen con OpenAI
-        extracted_data = openai_service.analyze_document_image(request.image)
+        # Procesar la imagen con el OpenAI Assistant real
+        logger.info("🤖 Usando OpenAI Assistant para procesamiento inteligente...")
+        context = {
+            "expenseId": request.expenseId,
+            "userData": {
+                "userId": request.userData.userId,
+                "empresa": request.userData.empresa
+            }
+        }
+        extracted_data = openai_assistant.process_document(request.image, context)
         
         # Agregar metadata del request
         extracted_data["expenseId"] = request.expenseId

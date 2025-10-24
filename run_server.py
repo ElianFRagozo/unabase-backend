@@ -1,39 +1,26 @@
 #!/usr/bin/env python3
 """
-Servidor estable sin monitoreo de archivos
+Script para ejecutar el servidor de manera estable
+Evita problemas con múltiples ventanas de Cursor
 """
-import os
+
 import uvicorn
-from dotenv import load_dotenv
-
-# Cargar variables de entorno
-load_dotenv()
-
-# Configuración del servidor
-HOST = os.getenv("HOST", "0.0.0.0")
-PORT = int(os.getenv("PORT", 8000))
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-
-def main():
-    print("🚀 Iniciando Unabase Document Processor API...")
-    print(f"📍 Servidor: http://{HOST}:{PORT}")
-    print(f"🔑 OpenAI configurado: {'✅' if OPENAI_API_KEY else '❌'}")
-    print("🛑 Presiona Ctrl+C para detener")
-    print("=" * 50)
-    
-    # Ejecutar servidor sin ninguna funcionalidad de reload
-    uvicorn.run(
-        "main:app",
-        host=HOST,
-        port=PORT,
-        reload=False,
-        log_level="info",
-        access_log=True,
-        # Configuraciones adicionales para evitar monitoreo
-        reload_dirs=None,
-        reload_excludes=None,
-        reload_delay=0,
-    )
+from main import app
+from config import settings
 
 if __name__ == "__main__":
-    main()
+    print("🚀 Iniciando servidor Unabase Backend...")
+    print(f"📍 Host: {settings.HOST}")
+    print(f"🔌 Puerto: {settings.PORT}")
+    print(f"🔧 Debug: {settings.DEBUG}")
+    print("=" * 50)
+    
+    uvicorn.run(
+        app,
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=False,  # Deshabilitado para evitar múltiples ventanas
+        reload_dirs=[],
+        reload_excludes=["*"],
+        log_level="info"
+    )
